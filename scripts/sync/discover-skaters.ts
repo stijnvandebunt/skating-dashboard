@@ -11,7 +11,7 @@
  * Usage: npx tsx scripts/sync/discover-skaters.ts [fromSeason] [toSeason]
  */
 import { ssrApi } from "@/lib/ssr/client";
-import { upsertSkaterStub } from "./lib/db";
+import { upsertSkaterStubs } from "./lib/db";
 import { seasonForDate } from "@/lib/ssr/season";
 
 const DISTANCES = [500, 1000, 1500, 3000, 5000, 10000] as const;
@@ -29,11 +29,9 @@ async function main() {
     for (const gender of GENDERS) {
       for (const distance of DISTANCES) {
         const response = await ssrApi.topN({ gender, season, distance, skater: "y", max: MAX_PER_QUERY });
-        for (const entry of response.topn) {
-          if (seen.has(entry.skater.id)) continue;
-          seen.add(entry.skater.id);
-          await upsertSkaterStub(entry.skater, gender);
-        }
+        const fresh = response.topn.filter((entry) => !seen.has(entry.skater.id));
+        for (const entry of fresh) seen.add(entry.skater.id);
+        await upsertSkaterStubs(fresh.map((entry) => ({ skater: entry.skater, gender })));
         console.log(
           `${season}/${season + 1} ${gender} ${distance}m: ${response.topn.length} entries, ${seen.size} skaters total`,
         );

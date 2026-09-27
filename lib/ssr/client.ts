@@ -58,7 +58,19 @@ async function getJson<T>(
     throw new SsrApiError(`SSR API ${response.status} for ${url}`, path, response.status);
   }
 
-  const body = await response.json();
+  // SSR occasionally answers a 200 with a plain-text error body (transient
+  // server-side hiccup, not a schema mismatch) — retry those like a 5xx.
+  let body: unknown;
+  try {
+    body = await response.json();
+  } catch (err) {
+    if (attempt < 3) {
+      await new Promise((resolve) => setTimeout(resolve, 2 ** attempt * 1000));
+      return getJson(path, params, schema, attempt + 1);
+    }
+    throw new SsrApiError(`Non-JSON response from ${url}: ${err}`, path, response.status);
+  }
+
   const parsed = schema.safeParse(body);
   if (!parsed.success) {
     throw new SsrApiError(`Unexpected shape from ${url}: ${parsed.error.message}`, path, response.status);

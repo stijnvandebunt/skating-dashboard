@@ -9,7 +9,7 @@
 import { ssrApi } from "@/lib/ssr/client";
 import { parseSsrTime } from "@/lib/ssr/time";
 import type { TablesInsert } from "@/lib/db/database.types";
-import { upsertSkaterStub, replaceRecords } from "./lib/db";
+import { upsertSkaterStubs, replaceRecords } from "./lib/db";
 import countries from "./data/countries.json";
 
 type SsrRecordEntry = {
@@ -28,12 +28,13 @@ async function toRows(
   country: string | null,
 ): Promise<TablesInsert<"records">[]> {
   const rows: TablesInsert<"records">[] = [];
+  const skaterStubs: { skater: NonNullable<SsrRecordEntry["skater"]>; gender: "m" | "f" }[] = [];
   for (const entry of entries) {
     const timeMs = parseSsrTime(entry.time);
     if (timeMs === null) continue;
 
     if (entry.skater) {
-      await upsertSkaterStub(entry.skater, entry.gender);
+      skaterStubs.push({ skater: entry.skater, gender: entry.gender });
     }
 
     rows.push({
@@ -48,6 +49,7 @@ async function toRows(
       skater_id: entry.skater?.id ?? null,
     });
   }
+  await upsertSkaterStubs(skaterStubs);
   return rows;
 }
 

@@ -7,7 +7,7 @@
  */
 import { ssrApi } from "@/lib/ssr/client";
 import { seasonForDate } from "@/lib/ssr/season";
-import { db, upsertSkaterStub, setSyncState } from "./lib/db";
+import { db, upsertSkaterStubs, setSyncState } from "./lib/db";
 import { syncSkater } from "./sync-skater";
 import { refreshAdelskalender } from "./refresh-views";
 
@@ -19,11 +19,9 @@ async function discoverCurrentSeason(season: number) {
   for (const gender of GENDERS) {
     for (const distance of DISTANCES) {
       const response = await ssrApi.topN({ gender, season, distance, skater: "y", max: 100 });
-      for (const entry of response.topn) {
-        if (found.has(entry.skater.id)) continue;
-        found.add(entry.skater.id);
-        await upsertSkaterStub(entry.skater, gender);
-      }
+      const fresh = response.topn.filter((entry) => !found.has(entry.skater.id));
+      for (const entry of fresh) found.add(entry.skater.id);
+      await upsertSkaterStubs(fresh.map((entry) => ({ skater: entry.skater, gender })));
     }
   }
   return found;

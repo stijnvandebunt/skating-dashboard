@@ -1,12 +1,25 @@
 import "./env";
-import { createSupabaseAdminClient } from "@/lib/db/admin-client";
-import type { TablesInsert } from "@/lib/db/database.types";
+import { createClient } from "@supabase/supabase-js";
+import type { Database, TablesInsert } from "@/lib/db/database.types";
 import { findTrackIdForLocation } from "./tracks";
+import { slugForSkater } from "./slug";
 import { seasonForDate } from "@/lib/ssr/season";
 import { parseSsrTime } from "@/lib/ssr/time";
 import { parseSsrLink } from "@/lib/ssr/link";
 
-export const db = createSupabaseAdminClient();
+// Deliberately not lib/db/admin-client.ts: that file imports "server-only",
+// which throws unconditionally outside Next.js's webpack build (it relies on
+// Next remapping the import during bundling, which plain tsx/node never
+// does). Sync scripts run standalone, so build the client directly here.
+function createSyncDbClient() {
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!key) throw new Error("SUPABASE_SERVICE_ROLE_KEY is not set (check .env.local)");
+  return createClient<Database>(process.env.NEXT_PUBLIC_SUPABASE_URL!, key, {
+    auth: { persistSession: false },
+  });
+}
+
+export const db = createSyncDbClient();
 
 export async function upsertTracksFromStaticList() {
   const { allTracks } = await import("./tracks");
@@ -21,11 +34,7 @@ export async function upsertTracksFromStaticList() {
   return rows.length;
 }
 
-export async function upsertSkaterStub(
-  skater: { id: number; givenname: string; familyname: string; country: string },
-  gender: "m" | "f",
-) {
-  const { slugForSkater } = await import("./slug");
+function stubRow(skater: { id: number; givenname: string; familyname: string; country: string }, gender: "m" | "f") {
   const row: TablesInsert<"skaters"> = {
     id: skater.id,
     slug: slugForSkater(skater.givenname, skater.familyname, skater.country, skater.id),
@@ -34,9 +43,29 @@ export async function upsertSkaterStub(
     country: skater.country,
     gender,
   };
-  // Insert-only: never clobber a skater we've already enriched (category,
-  // birthdate, ...) with a bare stub from records/topn discovery.
-  const { error } = await db.from("skaters").upsert(row, { onConflict: "id", ignoreDuplicates: true });
+  return row;
+}
+
+// Insert-only: never clobber a skater we've already enriched (category,
+// birthdate, ...) with a bare stub from records/topn discovery.
+export async function upsertSkaterStub(
+  skater: { id: number; givenname: string; familyname: string; country: string },
+  gender: "m" | "f",
+) {
+  const { error } = await db
+    .from("skaters")
+    .upsert(stubRow(skater, gender), { onConflict: "id", ignoreDuplicates: true });
+  if (error) throw error;
+}
+
+/** Batched version of upsertSkaterStub — one round trip for many skaters,
+ * instead of awaiting each individually in a loop. */
+export async function upsertSkaterStubs(
+  skaters: { skater: { id: number; givenname: string; familyname: string; country: string }; gender: "m" | "f" }[],
+) {
+  if (skaters.length === 0) return;
+  const rows = skaters.map(({ skater, gender }) => stubRow(skater, gender));
+  const { error } = await db.from("skaters").upsert(rows, { onConflict: "id", ignoreDuplicates: true });
   if (error) throw error;
 }
 
@@ -48,7 +77,6 @@ export async function upsertSkaterDetails(skater: {
   gender: "m" | "f";
   category?: string;
 }) {
-  const { slugForSkater } = await import("./slug");
   const row: TablesInsert<"skaters"> = {
     id: skater.id,
     slug: slugForSkater(skater.givenname, skater.familyname, skater.country, skater.id),
