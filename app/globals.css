@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+/*
+ * "IJs & snelheid" — broadcast-graphics identity for a data-dense stats site.
+ * Dark ice surface by default (this is the brand), with a light variant for
+ * users whose system prefers it. One accent only: speed-orange, reserved for
+ * PR's, records and primary actions — never decorative.
+ */
+:root {
+  --background: #0a0e14;
+  --surface: #10161d;
+  --surface-raised: #161d26;
+  --border: rgba(238, 242, 246, 0.09);
+  --border-strong: rgba(238, 242, 246, 0.16);
+  --foreground: #eef2f6;
+  --foreground-muted: #94a3ae;
+  --foreground-faint: #5c6b78;
+  --accent: #ff5a1f;
+  --accent-foreground: #0a0e14;
+  --accent-muted: rgba(255, 90, 31, 0.14);
+  --track-line: rgba(238, 242, 246, 0.06);
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --background: #f4f6f8;
+    --surface: #ffffff;
+    --surface-raised: #ffffff;
+    --border: rgba(10, 14, 20, 0.08);
+    --border-strong: rgba(10, 14, 20, 0.16);
+    --foreground: #0e131a;
+    --foreground-muted: #4b5763;
+    --foreground-faint: #8b96a1;
+    --accent: #e0490f;
+    --accent-foreground: #ffffff;
+    --accent-muted: rgba(224, 73, 15, 0.1);
+    --track-line: rgba(10, 14, 20, 0.05);
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-foreground: var(--foreground);
+  --color-foreground-muted: var(--foreground-muted);
+  --color-foreground-faint: var(--foreground-faint);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent-muted: var(--accent-muted);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-oswald);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+/* Tabular figures everywhere a time or rank is shown. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
