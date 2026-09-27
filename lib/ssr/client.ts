@@ -68,19 +68,30 @@ async function getJson<T>(
 
 import {
   ssrPersonalRecordsResponseSchema,
+  ssrSeasonBestsResponseSchema,
   ssrSkaterResultsResponseSchema,
   ssrTopNResponseSchema,
   ssrTrackCompetitionsResponseSchema,
+  ssrSkaterCompetitionsResponseSchema,
   ssrRecordsResponseSchema,
+  ssrCountryRecordsResponseSchema,
   ssrSkaterLookupResponseSchema,
+  ssrSeedTimesResponseSchema,
 } from "./schemas";
 
 export const ssrApi = {
   personalRecords: (skater: number) =>
-    getJson("personal_records", { skater }, ssrPersonalRecordsResponseSchema),
+    getJson("personal_records.php", { skater }, ssrPersonalRecordsResponseSchema),
 
+  seasonBests: (skater: number, opts: { start?: number; end?: number; distance?: number } = {}) =>
+    getJson("season_bests.php", { skater, ...opts }, ssrSeasonBestsResponseSchema),
+
+  /** Omit `season` to fetch a skater's entire career for that distance. */
   skaterResults: (skater: number, distance: number, season?: number) =>
     getJson("skater_results.php", { skater, distance, season }, ssrSkaterResultsResponseSchema),
+
+  skaterCompetitions: (skater: number, season?: number) =>
+    getJson("skater_competitions.php", { skater, season }, ssrSkaterCompetitionsResponseSchema),
 
   topN: (opts: {
     gender: "m" | "f";
@@ -96,10 +107,14 @@ export const ssrApi = {
   trackCompetitions: (track: number, season?: number) =>
     getJson("track_competitions.php", { track, season }, ssrTrackCompetitionsResponseSchema),
 
-  worldRecords: () => getJson("world_records", {}, ssrRecordsResponseSchema),
-  olympicRecords: () => getJson("olympic_records", {}, ssrRecordsResponseSchema),
-  nationalRecords: (country: string) => getJson("national_records", { country }, ssrRecordsResponseSchema),
+  worldRecords: () => getJson("world_records.php", {}, ssrRecordsResponseSchema),
+  olympicRecords: () => getJson("olympic_records.php", {}, ssrRecordsResponseSchema),
+  countryRecords: (country: string, opts: { gender?: "m" | "f"; age?: "sr" | "jr"; distance?: number } = {}) =>
+    getJson("country_records.php", { country, ...opts }, ssrCountryRecordsResponseSchema),
 
-  skaterLookup: (familyname: string, country?: string) =>
-    getJson("skater_lookup", { familyname, country }, ssrSkaterLookupResponseSchema),
+  skaterLookup: (familyname: string, opts: { givenname?: string; country?: string } = {}) =>
+    getJson("skater_lookup.php", { familyname, ...opts }, ssrSkaterLookupResponseSchema),
+
+  seedTimes: (skater: number, opts: { start?: string; end?: string } = {}) =>
+    getJson("seed_times.php", { skater, ...opts }, ssrSeedTimesResponseSchema),
 };

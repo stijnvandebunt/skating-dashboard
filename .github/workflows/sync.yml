@@ -1,0 +1,32 @@
+name: Sync SSR data
+
+on:
+  schedule:
+    # 04:00 UTC daily — after SSR's own overnight processing, before NL morning traffic
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+
+jobs:
+  incremental:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # dotenv (loaded by scripts/sync/lib/env.ts) reads .env.local; in CI the
+      # values above come from repo secrets instead, so write them there.
+      - run: |
+          cat > .env.local <<EOF
+          NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=$NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+          SUPABASE_SERVICE_ROLE_KEY=$SUPABASE_SERVICE_ROLE_KEY
+          EOF
+      - run: npm run sync:incremental

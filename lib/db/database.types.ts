@@ -95,6 +95,7 @@ export type Database = {
       }
       records: {
         Row: {
+          age: string
           competition_id: number | null
           country: string | null
           distance: number
@@ -109,6 +110,7 @@ export type Database = {
           type: string
         }
         Insert: {
+          age?: string
           competition_id?: number | null
           country?: string | null
           distance: number
@@ -123,6 +125,7 @@ export type Database = {
           type: string
         }
         Update: {
+          age?: string
           competition_id?: number | null
           country?: string | null
           distance?: number

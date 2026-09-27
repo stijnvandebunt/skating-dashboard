@@ -7,7 +7,13 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "sync:tracks": "tsx scripts/sync/seed-tracks.ts",
+    "sync:records": "tsx scripts/sync/seed-records.ts",
+    "sync:discover": "tsx scripts/sync/discover-skaters.ts",
+    "sync:skaters": "tsx scripts/sync/sync-all-skaters.ts",
+    "sync:incremental": "tsx scripts/sync/incremental.ts",
+    "sync:refresh-views": "tsx scripts/sync/refresh-views.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.2",
